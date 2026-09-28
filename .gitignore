@@ -1,0 +1,15 @@
+node_modules/
+.env
+coverage/
+coverage.json
+typechain/
+typechain-types/
+build/
+artifacts/
+cache/
+frontend/node_modules/
+frontend/build/
+backend/node_modules/
+.DS_Store
+*.sqlite
+database.sqlite
