@@ -39,6 +39,46 @@ export function AuthProvider({ children }) {
         }
     };
 
+    const switchToSupportedNetwork = async () => {
+        if (!window.ethereum) return false;
+        const hexChainId = '0x' + SUPPORTED_CHAIN_ID.toString(16);
+        try {
+            await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: hexChainId }],
+            });
+            return true;
+        } catch (switchError) {
+            // Error code 4902 indicates that the chain has not been added to MetaMask
+            if (switchError.code === 4902 || switchError?.data?.originalError?.code === 4902) {
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [
+                            {
+                                chainId: hexChainId,
+                                chainName: 'Hardhat Localhost',
+                                rpcUrls: ['http://127.0.0.1:8545'],
+                                nativeCurrency: {
+                                    name: 'ETH',
+                                    symbol: 'ETH',
+                                    decimals: 18,
+                                },
+                            },
+                        ],
+                    });
+                    return true;
+                } catch (addError) {
+                    console.error("Failed to add network to MetaMask:", addError);
+                    return false;
+                }
+            } else {
+                console.error("Failed to switch network:", switchError);
+                return false;
+            }
+        }
+    };
+
     const connectWallet = async () => {
         if (!window.ethereum) {
             alert('Please install MetaMask!');
@@ -48,13 +88,22 @@ export function AuthProvider({ children }) {
         setIsConnecting(true);
         setNetworkError(false);
         try {
-            const web3Provider = new BrowserProvider(window.ethereum);
-            const network = await web3Provider.getNetwork();
+            let web3Provider = new BrowserProvider(window.ethereum);
+            let network = await web3Provider.getNetwork();
             
             if (Number(network.chainId) !== SUPPORTED_CHAIN_ID) {
-                setNetworkError(true);
-                alert(`Wrong network detected. Please switch to chainId: ${SUPPORTED_CHAIN_ID}`);
-                return;
+                const switched = await switchToSupportedNetwork();
+                if (!switched) {
+                    setNetworkError(true);
+                    alert(`Wrong network detected. Please switch to chainId: ${SUPPORTED_CHAIN_ID} (Hardhat Localhost: http://127.0.0.1:8545) in MetaMask.`);
+                    return;
+                }
+                web3Provider = new BrowserProvider(window.ethereum);
+                network = await web3Provider.getNetwork();
+                if (Number(network.chainId) !== SUPPORTED_CHAIN_ID) {
+                    setNetworkError(true);
+                    return;
+                }
             }
 
             await web3Provider.send("eth_requestAccounts", []);
@@ -97,7 +146,8 @@ export function AuthProvider({ children }) {
     return (
         <AuthContext.Provider value={{
             account, role, provider, signer, contract,
-            isConnecting, connectWallet, disconnect
+            isConnecting, networkError, connectWallet, disconnect,
+            switchToSupportedNetwork
         }}>
             {children}
         </AuthContext.Provider>

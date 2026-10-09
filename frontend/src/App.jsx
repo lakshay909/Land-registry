@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 
 function Navbar() {
-  const { account, role, isConnecting, connectWallet, disconnect } = useAuth();
+  const { account, role, isConnecting, networkError, connectWallet, disconnect, switchToSupportedNetwork } = useAuth();
 
   return (
     <nav className="bg-slate-900 text-white p-4 flex justify-between items-center shadow-md">
@@ -18,6 +18,15 @@ function Navbar() {
       </div>
       
       <div className="flex items-center space-x-4">
+        {networkError && (
+          <button
+            onClick={switchToSupportedNetwork}
+            className="px-3 py-1.5 bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/50 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+            title="Click to automatically switch MetaMask to Hardhat Localhost (31337)"
+          >
+            <span>⚠️ Switch to Chain 31337</span>
+          </button>
+        )}
         {role && (
           <span className="px-3 py-1 bg-slate-800 rounded-full text-xs font-semibold uppercase tracking-wider text-slate-300 border border-slate-700">
             {role}

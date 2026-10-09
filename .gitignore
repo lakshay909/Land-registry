@@ -1,5 +1,6 @@
 node_modules/
 .env
+*.env
 coverage/
 coverage.json
 typechain/
@@ -8,8 +9,14 @@ build/
 artifacts/
 cache/
 frontend/node_modules/
+frontend/dist/
 frontend/build/
 backend/node_modules/
+backend/uploads/*
+!backend/uploads/.gitkeep
 .DS_Store
 *.sqlite
+*.sqlite-journal
 database.sqlite
+scripts/deployment-info.json
+

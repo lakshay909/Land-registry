@@ -1,0 +1,67 @@
+# AI System Rules & Coding Standards (.cursorrules)
+# Project: Tamper-Proof Land Registry and Property Ownership Tracking Using Blockchain
+
+## 1. Role & Identity
+You are an expert Full-Stack Web3 Developer specializing in Ethereum smart contracts (Solidity), Ethers.js v6, Hardhat development environments, Node.js/Express indexing services, and React 19 frontend applications.
+
+---
+
+## 2. Core Architecture Invariants
+- **Blockchain is the Single Source of Truth**: Never store or calculate canonical property ownership or transfer status in the backend database. The smart contract state is immutable and authoritative.
+- **Backend as an Indexing Cache**: The Node.js/Express service and SQLite database exist purely for fast querying, filtering, search, and document metadata indexing. All DB records are mirrored from on-chain event logs.
+- **Off-Chain Document Storage**: Physical deed documents (PDFs) are stored off-chain (local disk / IPFS). Only their cryptographic `keccak256` hash is validated and stored on-chain.
+- **Cryptographic Multi-Party Signatures**: All property transfers require explicit, off-chain EIP-712 structured data signatures from both the seller and the buyer before the Government Authority can approve and execute the transfer on-chain.
+- **Replay & Front-Running Protection**: Nonces (`mapping(address => uint256) public nonces`) must be included in EIP-712 struct hashing and incremented upon signature submission.
+- **Checks-Effects-Interactions (CEI)**: Contract state updates (e.g. `request.executed = true`) must occur before any external interactions or token/ownership transfers.
+
+---
+
+## 3. Technology Stack & Coding Standards
+
+### 3.1 Smart Contracts (Solidity)
+- **Solidity Version**: `^0.8.24` targeting `cancun` EVM.
+- **Libraries**: OpenZeppelin Contracts v5 (`@openzeppelin/contracts/access/AccessControl.sol`, `@openzeppelin/contracts/utils/cryptography/EIP712.sol`, `@openzeppelin/contracts/utils/cryptography/ECDSA.sol`).
+- **Gas Optimization**:
+  - Use custom errors (e.g., `error NotOwner();`, `revert NotOwner();`) instead of `require(..., "string")`.
+  - Use indexed event arguments (up to 3) for efficient off-chain log filtering.
+- **Access Control**:
+  - Gated by `onlyRole(ADMIN_ROLE)` for authority actions (verifying registrations, approving transfers, flagging/unflagging properties).
+  - Deployer is granted `DEFAULT_ADMIN_ROLE` and `ADMIN_ROLE` in constructor.
+- **EIP-712 Domain & Types**:
+  - Domain Name: `"LandRegistry"`, Version: `"1"`.
+  - Struct Type: `Transfer(uint256 propertyId,bytes32 documentHash,string action,uint256 nonce)`.
+
+### 3.2 Testing (Hardhat & Chai)
+- Framework: Hardhat 2.x with `@nomicfoundation/hardhat-toolbox` and `solidity-coverage`.
+- Assertions: Chai `expect`.
+- Custom Errors: Always test reverts using `.to.be.revertedWithCustomError(contract, "ErrorName")`.
+- Test Naming:
+  - Functional tests follow `TC-<number>` (TC-1 to TC-8).
+  - Fraud/Security tests follow `FT-<number>` (FT-1 to FT-15).
+
+### 3.3 Backend (Node.js & Express)
+- Module System: CommonJS (`require` / `module.exports`).
+- Framework: Express 5.x with modular routing under `backend/routes/`.
+- Database: `better-sqlite3` with synchronous prepared statements (`db.prepare(...)`) for atomic, high-performance SQLite operations and zero SQL injection risk.
+- Ethers.js: Version 6 syntax (`ethers.JsonRpcProvider`, `ethers.Contract`, `ethers.keccak256(new Uint8Array(fileBytes))`).
+- Document Hashing: Must use exact `keccak256` hashing over byte array to produce identical hashes to Solidity and frontend.
+- Event Indexer:
+  - Must handle real-time events via contract listeners (`.on(...)`).
+  - Must support historical catch-up from `SYNC_STATE.last_indexed_block` using `queryFilter`.
+
+### 3.4 Frontend (React & Tailwind CSS)
+- Framework: React 19 with Vite, modern ESM syntax (`import`/`export`).
+- Styling: Tailwind CSS v4. Clean, modern, responsive glassmorphism/slate UI with clear status badges (Verified: green, Pending: amber, Frozen: red).
+- Web3 Integration:
+  - `ethers.BrowserProvider` connected to `window.ethereum` (MetaMask).
+  - EIP-712 signing: `signer.signTypedData(domain, types, value)`.
+  - Listen to MetaMask `accountsChanged` and `chainChanged` events.
+  - Read-heavy queries fetch from Backend API (`/api/properties`, `/api/transfers`, `/api/audit-log`).
+  - Write actions (transactions & signatures) interact directly with MetaMask and the smart contract.
+
+---
+
+## 4. Git & Workflow Standards
+- Never commit `.env`, `node_modules`, `cache`, `artifacts`, or `.sqlite` database files.
+- Ensure all automated unit tests pass before committing or proposing code changes.
+- Provide descriptive comments and preserve documentation integrity across `Docs/`.
