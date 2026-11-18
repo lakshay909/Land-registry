@@ -1,19 +1,28 @@
 const express = require('express');
 const cors = require('cors');
 const { ethers } = require('ethers');
-const Database = require('better-sqlite3');
+const path = require('path');
 const multer = require('multer');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
+// Request logging middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    console.log(`[API] ${req.method} ${req.originalUrl} ${res.statusCode} (${Date.now() - start}ms)`);
+  });
+  next();
+});
+
 // Initialize Database
-const db = new Database(process.env.DB_PATH || 'database.sqlite');
+const db = require('./db');
 console.log('Connected to SQLite database.');
 
 // Initialize Provider
@@ -24,11 +33,18 @@ const propertiesRoutes = require('./routes/properties');
 const transfersRoutes = require('./routes/transfers');
 const documentsRoutes = require('./routes/documents');
 const auditRoutes = require('./routes/audit');
+const valuationRoutes = require('./routes/valuation');
 app.use('/api/properties', propertiesRoutes);
 app.use('/api/transfers', transfersRoutes);
 app.use('/api/documents', documentsRoutes);
 app.use('/api/audit-log', auditRoutes);
-app.use('/uploads', express.static('uploads'));
+app.use('/api/valuation', valuationRoutes);
+
+// Marketplace direct route alias
+app.get('/api/marketplace', (req, res, next) => {
+  req.url = '/marketplace';
+  propertiesRoutes(req, res, next);
+});
 
 // Basic health check route
 app.get('/api/health', async (req, res) => {
@@ -40,6 +56,10 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Backend server listening at http://localhost:${port}`);
-});
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`Backend server listening at http://localhost:${port}`);
+  });
+}
+
+module.exports = app;

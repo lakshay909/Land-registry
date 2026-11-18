@@ -13,7 +13,8 @@ const formatTransfer = (row) => ({
     toSigned: Boolean(row.to_signed),
     authorityApproved: Boolean(row.authority_approved),
     executed: Boolean(row.executed),
-    createdAt: row.created_at
+    createdAt: row.created_at,
+    escrowAmount: row.escrow_amount || '0'
 });
 
 // GET /api/transfers
@@ -31,7 +32,7 @@ router.get('/', (req, res) => {
             if (!/^0x[a-fA-F0-9]{40}$/.test(party)) {
                 return res.status(400).json({ error: 'Invalid party address format', code: 'INVALID_ADDRESS' });
             }
-            query += ' AND (from_address = ? OR to_address = ?)';
+            query += ' AND (LOWER(from_address) = LOWER(?) OR LOWER(to_address) = LOWER(?))';
             params.push(party, party);
         }
 

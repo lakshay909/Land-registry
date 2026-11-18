@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /**
  * @title LandRegistry
- * @notice A smart contract for tracking land ownership, transfers, and verifications
+ * @notice A smart contract for tracking land ownership, transfers, marketplace listings, and verifications
  */
 contract LandRegistry is AccessControl, EIP712 {
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
@@ -26,6 +26,8 @@ contract LandRegistry is AccessControl, EIP712 {
         bool isVerifiedByAuthority;
         bool isFrozen;
         uint256 registeredAt;
+        uint256 price;
+        bool isForSale;
     }
 
     struct TransferRequest {
@@ -37,6 +39,7 @@ contract LandRegistry is AccessControl, EIP712 {
         bool toSigned;
         bool authorityApproved;
         bool executed;
+        uint256 escrowAmount;
     }
 
     mapping(uint256 => Property) public properties;
@@ -53,10 +56,16 @@ contract LandRegistry is AccessControl, EIP712 {
 
     event PropertyRegistered(uint256 indexed propertyId, address indexed owner);
     event PropertyVerified(uint256 indexed propertyId);
+    event PropertyListed(uint256 indexed propertyId, uint256 price, address indexed owner);
+    event PropertyDelisted(uint256 indexed propertyId);
     event TransferInitiated(uint256 indexed transferId, uint256 indexed propertyId, address from, address to);
     event TransferSigned(uint256 indexed transferId, address indexed signer);
     event TransferApproved(uint256 indexed transferId);
+    event TransferRejected(uint256 indexed transferId, string reason);
     event OwnershipTransferred(uint256 indexed propertyId, uint256 transferId, address indexed from, address indexed to);
+    event EscrowDeposited(uint256 indexed transferId, address indexed buyer, uint256 amount);
+    event EscrowReleased(uint256 indexed transferId, address indexed seller, uint256 amount);
+    event EscrowRefunded(uint256 indexed transferId, address indexed buyer, uint256 amount);
     event PropertyFlagged(uint256 indexed propertyId, string reason);
     event PropertyUnflagged(uint256 indexed propertyId);
 
@@ -81,6 +90,12 @@ contract LandRegistry is AccessControl, EIP712 {
     // Step 6 & Verification specific errors
     error PropertyNotFrozen();
     error PropertyNotVerified();
+
+    // Marketplace & Escrow specific errors
+    error InvalidPrice();
+    error PropertyNotForSale();
+    error InsufficientPayment();
+    error TransferFailed();
 
     constructor() EIP712("LandRegistry", "1") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -108,7 +123,9 @@ contract LandRegistry is AccessControl, EIP712 {
             documentHash: _documentHash,
             isVerifiedByAuthority: false,
             isFrozen: false,
-            registeredAt: block.timestamp
+            registeredAt: block.timestamp,
+            price: 0,
+            isForSale: false
         });
 
         registeredDocuments[_documentHash] = true;
@@ -132,36 +149,93 @@ contract LandRegistry is AccessControl, EIP712 {
     }
 
     /**
-     * @notice Initiates a transfer request to a new owner
+     * @notice Lists a verified property for sale on the marketplace
+     * @param _propertyId The ID of the property to list
+     * @param _price The asking price in wei
+     */
+    function listPropertyForSale(uint256 _propertyId, uint256 _price) external {
+        Property storage property = properties[_propertyId];
+        if (property.id == 0) revert PropertyDoesNotExist();
+        if (property.currentOwner != msg.sender) revert NotOwner();
+        if (!property.isVerifiedByAuthority) revert PropertyNotVerified();
+        if (property.isFrozen) revert PropertyIsFrozen();
+        if (_price == 0) revert InvalidPrice();
+
+        property.price = _price;
+        property.isForSale = true;
+
+        emit PropertyListed(_propertyId, _price, msg.sender);
+    }
+
+    /**
+     * @notice Delists a property from the marketplace
+     * @param _propertyId The ID of the property to delist
+     */
+    function delistProperty(uint256 _propertyId) external {
+        Property storage property = properties[_propertyId];
+        if (property.id == 0) revert PropertyDoesNotExist();
+        if (property.currentOwner != msg.sender) revert NotOwner();
+        if (!property.isForSale) revert PropertyNotForSale();
+
+        property.isForSale = false;
+        property.price = 0;
+
+        emit PropertyDelisted(_propertyId);
+    }
+
+    /**
+     * @notice Initiates a transfer request to a new owner (or buys from marketplace with escrow)
      * @param _propertyId The ID of the property to transfer
      * @param _to The address of the new owner
      * @param _newDocumentHash Hash of the new deed document
      */
-    function initiateTransfer(uint256 _propertyId, address _to, bytes32 _newDocumentHash) external {
+    function initiateTransfer(uint256 _propertyId, address _to, bytes32 _newDocumentHash) external payable {
         Property storage property = properties[_propertyId];
         if (property.id == 0) revert PropertyDoesNotExist();
         if (!property.isVerifiedByAuthority) revert PropertyNotVerified();
-        if (property.currentOwner != msg.sender) revert NotOwner();
         if (property.isFrozen) revert PropertyIsFrozen();
-        if (_to == msg.sender) revert InvalidTransferToSelf();
         if (registeredDocuments[_newDocumentHash]) revert DuplicateRegistration();
+
+        address fromAddress;
+        address toAddress;
+        uint256 escrow = 0;
+
+        if (msg.sender == property.currentOwner) {
+            // Seller-initiated transfer
+            if (_to == msg.sender) revert InvalidTransferToSelf();
+            fromAddress = msg.sender;
+            toAddress = _to;
+            escrow = msg.value;
+        } else {
+            // Buyer-initiated transfer (Marketplace purchase)
+            if (!property.isForSale) revert NotOwner();
+            if (msg.value < property.price) revert InsufficientPayment();
+            fromAddress = property.currentOwner;
+            toAddress = msg.sender;
+            escrow = msg.value;
+        }
 
         uint256 transferId = nextTransferId;
         
         transfers[transferId] = TransferRequest({
             propertyId: _propertyId,
-            from: msg.sender,
-            to: _to,
+            from: fromAddress,
+            to: toAddress,
             newDocumentHash: _newDocumentHash,
             fromSigned: false,
             toSigned: false,
             authorityApproved: false,
-            executed: false
+            executed: false,
+            escrowAmount: escrow
         });
 
         nextTransferId++;
 
-        emit TransferInitiated(transferId, _propertyId, msg.sender, _to);
+        if (escrow > 0) {
+            emit EscrowDeposited(transferId, toAddress, escrow);
+        }
+
+        emit TransferInitiated(transferId, _propertyId, fromAddress, toAddress);
     }
 
     /**
@@ -201,7 +275,7 @@ contract LandRegistry is AccessControl, EIP712 {
     }
 
     /**
-     * @notice Approves a pending transfer (Authority Only)
+     * @notice Approves a pending transfer (Authority Only) and releases escrow funds to seller
      * @param _transferId The ID of the transfer request
      */
     function approveTransfer(uint256 _transferId) external onlyRole(ADMIN_ROLE) {
@@ -211,7 +285,40 @@ contract LandRegistry is AccessControl, EIP712 {
         if (request.authorityApproved) revert AlreadyApproved();
 
         request.authorityApproved = true;
+
+        if (request.escrowAmount > 0) {
+            uint256 amount = request.escrowAmount;
+            request.escrowAmount = 0;
+            (bool success, ) = payable(request.from).call{value: amount}("");
+            if (!success) revert TransferFailed();
+            emit EscrowReleased(_transferId, request.from, amount);
+        }
+
         emit TransferApproved(_transferId);
+    }
+
+    /**
+     * @notice Rejects a pending transfer (Authority Only) and refunds escrow funds to buyer
+     * @param _transferId The ID of the transfer request
+     * @param _reason The reason for rejection
+     */
+    function rejectTransfer(uint256 _transferId, string memory _reason) external onlyRole(ADMIN_ROLE) {
+        TransferRequest storage request = transfers[_transferId];
+        if (request.propertyId == 0) revert TransferDoesNotExist();
+        if (request.executed) revert AlreadyExecuted();
+        if (request.authorityApproved) revert AlreadyApproved();
+
+        request.executed = true; // Mark finalized so it cannot be executed
+
+        if (request.escrowAmount > 0) {
+            uint256 amount = request.escrowAmount;
+            request.escrowAmount = 0;
+            (bool success, ) = payable(request.to).call{value: amount}("");
+            if (!success) revert TransferFailed();
+            emit EscrowRefunded(_transferId, request.to, amount);
+        }
+
+        emit TransferRejected(_transferId, _reason);
     }
 
     /**
@@ -234,9 +341,20 @@ contract LandRegistry is AccessControl, EIP712 {
         // 2. CEI pattern: state flipped to true before external interactions
         request.executed = true;
 
+        // If escrow was not yet released for any reason, release now
+        if (request.escrowAmount > 0) {
+            uint256 amount = request.escrowAmount;
+            request.escrowAmount = 0;
+            (bool success, ) = payable(request.from).call{value: amount}("");
+            if (!success) revert TransferFailed();
+            emit EscrowReleased(_transferId, request.from, amount);
+        }
+
         // 3. State update
         property.currentOwner = request.to;
         property.documentHash = request.newDocumentHash;
+        property.isForSale = false;
+        property.price = 0;
         registeredDocuments[request.newDocumentHash] = true;
 
         // 4. Update on-chain array for ownership history

@@ -1,0 +1,117 @@
+{
+  "$schema": "https://bhumi-ledger.gov.in/schemas/state.config.json",
+  "stateCode": "UP",
+  "stateNameEn": "Uttar Pradesh",
+  "stateNameHi": "उत्तर प्रदेश",
+  "status": "ACTIVE_PILOT",
+  "description": "Primary pilot state for Bhūmi Ledger digital land conveyance, registry synchronization, and circle rate valuation.",
+  "pilotDistricts": [
+    {
+      "code": "LKO",
+      "nameEn": "Lucknow",
+      "nameHi": "लखनऊ",
+      "tehsils": ["Lucknow Sadar", "Bakshi Ka Talab", "Mohanlalganj", "Malihabad", "Sarojini Nagar"],
+      "urbanDevelopmentAuthority": "Lucknow Development Authority (LDA)",
+      "surchargeApplicable": true
+    },
+    {
+      "code": "GBN",
+      "nameEn": "Gautam Buddha Nagar",
+      "nameHi": "गौतम बुद्ध नगर",
+      "tehsils": ["Noida", "Dadri", "Jewar"],
+      "urbanDevelopmentAuthority": "New Okhla Industrial Development Authority (NOIDA)",
+      "surchargeApplicable": true
+    }
+  ],
+  "totalDistricts": 75,
+  "administrativeDivisions": 18,
+  "featureReadiness": {
+    "parcelIngestion": {
+      "status": "ACTIVE",
+      "label": "16-Digit Gata Verification",
+      "description": "Validation against UP Bhulekh 16-digit Unique Parcel Code (UPIC) and 14-char ULPIN."
+    },
+    "circleRateValuation": {
+      "status": "ACTIVE",
+      "label": "UP Stamp Rules 1997 Calculator",
+      "description": "Dynamic valuation using base rate, Rule 5 road multipliers, and female buyer concessions."
+    },
+    "mutationTracking": {
+      "status": "ACTIVE",
+      "label": "Rule 34 Statutory SLA Tracker",
+      "description": "Tracks 30-day proclamation notices and statutory 45/90 day mutation disposal targets."
+    },
+    "taxSchedule": {
+      "status": "ACTIVE",
+      "label": "Section 393 Form 141 Assistant",
+      "description": "Generates 1% TDS schedule and pre-filled Form 141 (Schedule B) for consideration >= ₹50 Lakhs."
+    },
+    "consularNriPoa": {
+      "status": "ACTIVE",
+      "label": "Section 18 90-Day Countdown",
+      "description": "Mandatory stamping countdown for instruments executed outside India upon arrival."
+    },
+    "marketplaceResale": {
+      "status": "INFORMATIONAL_ONLY",
+      "label": "Rural Resale Directory",
+      "description": "Informational listings for standalone ancestral rural land only; strictly non-brokerage."
+    },
+    "automatedMatching": {
+      "status": "LOCKED_PENDING_COUNSEL",
+      "label": "Automated Buyer-Seller Matching",
+      "description": "Gated pending formal written compliance opinion from external High Court advocate."
+    },
+    "regulatedEscrowSettlement": {
+      "status": "SIMULATION_ONLY",
+      "label": "Non-Custodial Settlement Rail",
+      "description": "Development EVM escrow simulation; live banking funds flow strictly bank-to-bank."
+    }
+  },
+  "statutory": {
+    "revenueCode": "Uttar Pradesh Revenue Code, 2006 (U.P. Act No. 8 of 2012)",
+    "revenueRules": "Uttar Pradesh Revenue Code Rules, 2016",
+    "stampActSchedule": "Indian Stamp Act, 1899 (U.P. Schedule 1-B)",
+    "stampValuationRules": "Uttar Pradesh Stamp (Valuation of Property) Rules, 1997",
+    "agriculturalLandCeilingHectares": 5.0586,
+    "ceilingSection": "Section 89, UP Revenue Code 2006",
+    "mutationRules": {
+      "proclamationNoticeDays": 30,
+      "noticeRule": "Rule 34(1), UP Revenue Code Rules 2016",
+      "undisputedMutationSlaDays": 45,
+      "disputedMutationSlaDays": 90,
+      "slaRule": "Rule 34(7), UP Revenue Code Rules 2016"
+    }
+  },
+  "feeSchedule": {
+    "baseStampDutyPct": 5.0,
+    "localBodySurchargeUrbanPct": 2.0,
+    "localBodySurchargeRuralPct": 0.0,
+    "femaleBuyerConcessionPct": 1.0,
+    "femaleConcessionGovtOrder": "U.P. Govt Order 1383/97",
+    "registrationFeePct": 1.0,
+    "roadMultipliers": {
+      "nationalHighway": 1.5,
+      "stateHighway": 1.35,
+      "linkRoad": 1.2,
+      "interiorPaved": 1.1,
+      "unpaved": 1.0
+    }
+  },
+  "terminology": {
+    "parcelIdentifierLabel": "Gata / Khasra Number (गाटा / खसरा संख्या)",
+    "parcelCodeLabel": "16-Digit UPIC (भूखंड का विशिष्ट कोड)",
+    "recordOfRightsLabel": "Khatauni (अधिकार अभिलेख / खतौनी)",
+    "revenueVillageLabel": "Revenue Village / Gram (राजस्व ग्राम)",
+    "subDistrictLabel": "Tehsil (तहसील)",
+    "districtLabel": "District (जनपद)",
+    "tenureClassification": "Bhumidhar with Transferable Rights (संक्रमणीय भूमिधर)",
+    "cadastralMapLabel": "Bhu-Naksha (भू-नक्शा / शजरा)"
+  },
+  "officialPortals": {
+    "bhulekh": "https://upbhulekh.gov.in",
+    "bhunaksha": "https://upbhunaksha.gov.in",
+    "igrsup": "https://igrsup.gov.in",
+    "vaadRevenueCourt": "https://vaad.up.nic.in",
+    "edistrict": "https://edistrict.up.gov.in"
+  }
+}

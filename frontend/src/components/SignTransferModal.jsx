@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Dialog } from '@headlessui/react';
 import { useAuth } from '../context/AuthContext';
 import { CONTRACT_ADDRESS, SUPPORTED_CHAIN_ID } from '../config';
+import { parseContractError } from '../utils/contractErrors';
 
 export default function SignTransferModal({ isOpen, onClose, transfer, onSignSuccess }) {
   const { signer, contract } = useAuth();
@@ -13,8 +14,26 @@ export default function SignTransferModal({ isOpen, onClose, transfer, onSignSuc
     setError('');
 
     try {
-      // 1. Fetch current nonce from contract
       const signerAddress = await signer.getAddress();
+
+      // 0. Safety Pre-check: Verify if signer has already signed on-chain
+      if (contract && transfer?.transferId) {
+        try {
+          const onChainTransfer = await contract.transfers(transfer.transferId);
+          const isSender = signerAddress.toLowerCase() === onChainTransfer.from.toLowerCase();
+          const isReceiver = signerAddress.toLowerCase() === onChainTransfer.to.toLowerCase();
+          const alreadySigned = (isSender && onChainTransfer.fromSigned) || (isReceiver && onChainTransfer.toSigned);
+          if (alreadySigned) {
+            onSignSuccess?.();
+            onClose();
+            return;
+          }
+        } catch (checkErr) {
+          console.warn('Could not pre-verify transfer signature status:', checkErr);
+        }
+      }
+
+      // 1. Fetch current nonce from contract
       const nonce = await contract.nonces(signerAddress);
 
       // 2. Define exactly matching EIP-712 Domain
@@ -50,11 +69,21 @@ export default function SignTransferModal({ isOpen, onClose, transfer, onSignSuc
       const tx = await contract.signTransfer(transfer.transferId, signature);
       await tx.wait();
 
-      onSignSuccess();
+      onSignSuccess?.();
       onClose();
     } catch (err) {
-      console.error(err);
-      setError(`Signature failed: ${err.reason || err.message}`);
+      console.error('Sign transfer error:', err);
+      const parsedMsg = parseContractError(err);
+      
+      // If the error was AlreadySigned (e.g. race condition or double submission),
+      // refresh UI and close modal gracefully
+      if (parsedMsg.includes('already been digitally signed')) {
+        onSignSuccess?.();
+        onClose();
+        return;
+      }
+
+      setError(`Signature failed: ${parsedMsg}`);
     } finally {
       setIsSigning(false);
     }
@@ -64,47 +93,53 @@ export default function SignTransferModal({ isOpen, onClose, transfer, onSignSuc
 
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
-      <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+      <div className="fixed inset-0 bg-gray-900/50 transition-opacity" aria-hidden="true" />
       
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="mx-auto max-w-md rounded-xl bg-white p-6 shadow-xl border border-slate-200">
-          <Dialog.Title className="text-xl font-bold text-slate-900 mb-4">
-            Sign Property Transfer
-          </Dialog.Title>
+        <Dialog.Panel className="mx-auto max-w-md w-full rounded-xl bg-white border border-gray-200 p-6 shadow-xl text-gray-900">
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <Dialog.Title className="text-lg font-bold text-[#0f2b5a]">
+              Sign Conveyance Deed
+            </Dialog.Title>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-50 text-[#138808] border border-green-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#138808]" />
+              Digital Deed
+            </span>
+          </div>
           
           <div className="space-y-4 mb-6">
-            <p className="text-slate-600 text-sm">
-              You are about to cryptographically sign a transfer request for <strong>Property #{transfer.propertyId}</strong>.
+            <p className="text-gray-600 text-xs leading-relaxed">
+              You are authorizing the transfer of <strong>Parcel #{transfer.propertyId}</strong> using your digital wallet signature. This verifies to the Government Registrar that you consent to this title conveyance.
             </p>
-            <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 text-sm font-mono space-y-2 break-all">
-              <p><span className="text-slate-500 font-semibold uppercase text-xs">To:</span> <br/>{transfer.toAddress}</p>
-              <p><span className="text-slate-500 font-semibold uppercase text-xs">Doc Hash:</span> <br/>{transfer.newDocumentHash}</p>
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-xs font-mono space-y-2 break-all text-gray-800">
+              <p><span className="text-gray-500 font-bold uppercase text-[10px]">Recipient (Buyer):</span> <br/><span className="text-gray-700">{transfer.toAddress}</span></p>
+              <p><span className="text-gray-500 font-bold uppercase text-[10px]">Title Deed Fingerprint:</span> <br/><span className="text-gray-900 font-semibold">{transfer.newDocumentHash}</span></p>
             </div>
-            <p className="text-xs text-slate-500">
-              This will trigger a MetaMask signature request. It costs no gas to sign, but the signature will be broadcast on-chain in the next step.
+            <p className="text-[11px] text-gray-500">
+              Your connected wallet will prompt you to review and sign. Once submitted, the Government Registrar can review and execute the title transfer.
             </p>
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-rose-50 text-rose-700 text-sm rounded border border-rose-200">
+            <div className="mb-4 p-3 bg-red-50 text-red-800 text-xs rounded-lg border border-red-200">
               {error}
             </div>
           )}
 
-          <div className="flex justify-end space-x-3">
+          <div className="flex justify-end items-center gap-3 pt-4 border-t border-gray-200">
             <button
               onClick={onClose}
               disabled={isSigning}
-              className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg transition"
+              className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-600 hover:text-gray-900 transition cursor-pointer rounded-lg"
             >
               Cancel
             </button>
             <button
               onClick={handleSign}
               disabled={isSigning}
-              className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-70 text-white px-5 py-2 rounded-lg font-semibold transition"
+              className="bg-[#0f2b5a] hover:bg-blue-900 active:bg-blue-950 disabled:opacity-50 text-white px-5 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition shadow-xs cursor-pointer"
             >
-              {isSigning ? 'Waiting for signature...' : 'Sign Typed Data'}
+              {isSigning ? 'Signing in Wallet...' : 'Authorize & Sign Deed'}
             </button>
           </div>
         </Dialog.Panel>

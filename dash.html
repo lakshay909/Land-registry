@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>National Digital Land Registry | Govt of India</title>
+    <!-- Tailwind CSS for Quick Styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .bg-nic-blue {
+            background-color: #0f2b5a;
+        }
+
+        .text-nic-blue {
+            color: #0f2b5a;
+        }
+
+        .bg-nic-green {
+            background-color: #138808;
+        }
+
+        .border-nic-orange {
+            border-color: #FF9933;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-gray-800">
+
+    <!-- Top Government Banner -->
+    <div
+        class="bg-gray-100 border-b border-gray-200 py-1 px-6 text-xs font-semibold text-gray-500 flex justify-between">
+        <span>भारत सरकार | GOVERNMENT OF INDIA</span>
+        <span>Ministry of Rural Development</span>
+    </div>
+
+    <!-- Main Navigation -->
+    <nav class="bg-white shadow-sm border-b-4 border-nic-orange sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20 items-center">
+
+                <!-- Dummy Official Logo -->
+                <div class="flex items-center space-x-4">
+                    <div
+                        class="h-12 w-12 rounded-full border-2 border-gray-300 flex items-center justify-center bg-gray-50 text-gray-400 font-bold text-xl">
+                        Emblem
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-nic-blue leading-tight">Department of Land Records</h1>
+                        <p class="text-sm font-medium text-gray-500">National Digital Land Registry</p>
+                    </div>
+                </div>
+
+                <!-- Nav Links & Login -->
+                <div class="hidden md:flex items-center space-x-8 font-medium text-gray-600">
+                    <a href="#" class="text-nic-blue border-b-2 border-nic-blue pb-1">Public Search</a>
+                    <a href="#" class="hover:text-nic-blue transition">Guidelines</a>
+                    <a href="#" class="hover:text-nic-blue transition">Contact Us</a>
+                    <!-- Standard Web3 Login Button -->
+                    <button
+                        class="bg-nic-blue hover:bg-blue-800 text-white px-5 py-2.5 rounded shadow-sm transition flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+                            </path>
+                        </svg>
+                        Login with Digital ID
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <main class="max-w-5xl mx-auto mt-16 px-4 text-center">
+        <span class="bg-green-100 text-nic-green text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
+            Verified by Blockchain Technology
+        </span>
+
+        <h2 class="mt-6 text-4xl md:text-5xl font-extrabold text-nic-blue tracking-tight">
+            Verify Land Titles Securely
+        </h2>
+        <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+            Query state revenue records, inspect cadastral coordinates, and verify authentic property ownership directly
+            through the national digital ledger.
+        </p>
+
+        <!-- Search Bar -->
+        <div class="mt-10 max-w-3xl mx-auto bg-white p-2 rounded-lg shadow-md border border-gray-200 flex">
+            <div class="flex-grow flex items-center pl-4">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                <input type="text" placeholder="Enter Property Survey Number or ID (e.g., 1024)"
+                    class="w-full pl-3 pr-4 py-3 outline-none text-gray-700 bg-transparent">
+            </div>
+            <button
+                class="bg-nic-green hover:bg-green-700 text-white font-semibold px-8 py-3 rounded transition shadow-sm">
+                Search Title
+            </button>
+        </div>
+
+        <div class="mt-4 text-sm text-gray-500 font-medium space-x-2">
+            <span>Quick Demo Queries:</span>
+            <span class="bg-gray-100 px-2 py-1 rounded border border-gray-200 cursor-pointer hover:bg-gray-200">Parcel
+                #1</span>
+            <span class="bg-gray-100 px-2 py-1 rounded border border-gray-200 cursor-pointer hover:bg-gray-200">Parcel
+                #2</span>
+        </div>
+    </main>
+
+    <!-- Statistics Section -->
+    <section class="max-w-6xl mx-auto mt-20 px-4 mb-24 grid grid-cols-1 md:grid-cols-4 gap-6">
+
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 border-t-4 border-t-nic-blue text-center">
+            <p class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Secured Records</p>
+            <p class="mt-2 text-3xl font-bold text-nic-blue">14,250+</p>
+            <p class="mt-1 text-xs text-gray-500">Government Verified</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 border-t-4 border-t-nic-green text-center">
+            <p class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Transaction Volume</p>
+            <p class="mt-2 text-3xl font-bold text-nic-blue">₹5,820 Cr</p>
+            <p class="mt-1 text-xs text-gray-500">Securely Processed</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 border-t-4 border-t-red-500 text-center">
+            <p class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Fraud Cases</p>
+            <p class="mt-2 text-3xl font-bold text-nic-blue">0 Cases</p>
+            <p class="mt-1 text-xs text-gray-500">Zero Duplicates Found</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 border-t-4 border-t-gray-500 text-center">
+            <p class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Security Model</p>
+            <p class="mt-2 text-2xl font-bold text-nic-blue mt-3">Digital Ledger</p>
+            <p class="mt-1 text-xs text-gray-500">Tamper-Proof Audit</p>
+        </div>
+
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-100 border-t border-gray-200 py-8 text-center text-sm text-gray-500">
+        <p>© 2026 Department of Land Records, Government of India. All rights reserved.</p>
+        <p class="mt-2 text-xs">This is a public service portal secured by Blockchain Technology.</p>
+    </footer>
+
+</body>
+
+</html>

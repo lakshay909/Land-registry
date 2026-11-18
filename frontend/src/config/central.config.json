@@ -1,0 +1,75 @@
+{
+  "$schema": "https://bhumi-ledger.gov.in/schemas/central.config.json",
+  "jurisdiction": "Republic of India",
+  "countryCode": "IN",
+  "currency": {
+    "code": "INR",
+    "symbol": "₹",
+    "name": "Indian Rupee"
+  },
+  "constitutionalBasis": {
+    "schedule": "Seventh Schedule",
+    "list": "List II (State List)",
+    "entry": "Entry 18",
+    "mandate": "Land, that is to say, rights in or over land, land tenures including the relation of landlord and tenant, and the collection of rents; transfer and alienation of agricultural land; land improvement and agricultural loans; colonization."
+  },
+  "statutoryBaselines": {
+    "directTax": {
+      "act": "Income-tax Act, 2025",
+      "provision": "Section 393(1)",
+      "thresholdINR": 5000000,
+      "tdsRatePct": 1.0,
+      "filingForm": "Form 141 (Schedule B)",
+      "exemptions": [
+        {
+          "type": "RURAL_AGRICULTURAL_LAND",
+          "section": "Section 2(42)",
+          "tdsExempt": true,
+          "condition": "Exempt if agricultural land situated outside municipalities or notified cantonment board areas with population >= 10,000."
+        }
+      ]
+    },
+    "registration": {
+      "act": "Registration Act, 1908",
+      "compulsoryRegistrationSection": "Section 17(1)",
+      "optionalRegistrationSection": "Section 18",
+      "jurisdictionRule": "Section 28 (document must be presented in the Sub-District where the property is situated)",
+      "timeLimitMonths": 4
+    },
+    "electronicTransactions": {
+      "act": "Information Technology Act, 2000",
+      "electronicContractsSection": "Section 10A",
+      "statutoryDeedExclusion": "First Schedule, Entry 1 (Excludes conveyance deeds and power of attorney creating interest in immovable property from pure electronic execution without statutory physical registration)"
+    },
+    "stampDutyFederal": {
+      "act": "Indian Stamp Act, 1899",
+      "chargeability": "Section 3",
+      "consularNriPoa": {
+        "section": "Section 18",
+        "statutoryDeadlineDays": 90,
+        "mandate": "Every instrument executed outside India must be stamped within 3 months after it has been first received in India."
+      },
+      "underValuation": "Section 47A"
+    },
+    "dataProtection": {
+      "act": "Digital Personal Data Protection Act, 2023",
+      "rules": "Digital Personal Data Protection Rules, 2025 (G.S.R. 846(E))",
+      "commencement": "G.S.R. 843(E)",
+      "statutoryHoldExemption": "Section 17(1)(b) (Exempts processing necessary for compliance with statutory laws, revenue audits, and tax assessments)",
+      "aadhaarPolicy": "EXCLUDED from MVP Release 1 pursuant to Puttaswamy (2018) and UIDAI circulars"
+    },
+    "rera": {
+      "act": "Real Estate (Regulation and Development) Act, 2016",
+      "agentDefinition": "Section 2(zm)",
+      "registrationMandate": "Section 9",
+      "applicabilityThreshold": "Projects exceeding 500 sq.m or 8 apartments require registration under Section 3",
+      "marketplacePolicy": "Informational rural resale directory only; unassisted matching gated pending external High Court counsel opinion"
+    }
+  },
+  "settlementRail": {
+    "model": "Model 4 (Pure Non-Custodial Software Assistant)",
+    "custodyOfFunds": "ZERO_PLATFORM_CUSTODY",
+    "directBankTransfers": ["RTGS", "NEFT", "IMPS"],
+    "rbiAuthorisationRequired": false
+  }
+}
