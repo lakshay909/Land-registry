@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "npm --prefix frontend run build",
+    "build:frontend": "npm --prefix frontend run build",
     "compile": "hardhat compile",
     "test": "hardhat test",
     "coverage": "hardhat coverage",
