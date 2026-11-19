@@ -5,8 +5,6 @@ import { API_URL } from '../config';
 import { ethers } from 'ethers';
 import { parseContractError } from '../utils/contractErrors';
 
-const HARDHAT_ACCOUNT_0 = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266';
-
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ');
 }
@@ -481,7 +479,7 @@ export default function AuthorityDashboard() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-address': account || HARDHAT_ACCOUNT_0
+          'x-user-address': account || ''
         },
         body: JSON.stringify({
           ulpin: cleanUlpin,
@@ -1507,7 +1505,7 @@ export default function AuthorityDashboard() {
                     </p>
                   </div>
                   <a
-                    href={`${API_URL}/api/documents/${inspectingProp.documentHash}/download?userAddress=${account || HARDHAT_ACCOUNT_0}`}
+                    href={`${API_URL}/api/documents/${inspectingProp.documentHash}/download?userAddress=${account || ''}`}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#0f2b5a] hover:bg-blue-900 text-white text-xs font-semibold tracking-wider uppercase transition shadow-xs"

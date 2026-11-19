@@ -7,7 +7,6 @@ import { ethers } from 'ethers';
 import InitiateTransferModal from '../components/InitiateTransferModal';
 import SignTransferModal from '../components/SignTransferModal';
 import ListPropertyModal from '../components/ListPropertyModal';
-import BuyPropertyModal from '../components/BuyPropertyModal';
 import DocumentUploadModal from '../components/DocumentUploadModal';
 import { parseContractError } from '../utils/contractErrors';
 
@@ -23,10 +22,8 @@ export default function CitizenDashboard() {
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
 
   const [properties, setProperties] = useState([]);
-  const [marketplaceProps, setMarketplaceProps] = useState([]);
   const [transfers, setTransfers] = useState([]);
   const [loadingProps, setLoadingProps] = useState(true);
-  const [loadingMarket, setLoadingMarket] = useState(true);
   const [loadingTransfers, setLoadingTransfers] = useState(true);
 
   // Registration Form State
@@ -43,7 +40,6 @@ export default function CitizenDashboard() {
   const [initiatingProperty, setInitiatingProperty] = useState(null);
   const [signingTransfer, setSigningTransfer] = useState(null);
   const [listingProperty, setListingProperty] = useState(null);
-  const [buyingProperty, setBuyingProperty] = useState(null);
   const [actionStatus, setActionStatus] = useState(null); // { type: 'success' | 'error' | 'info', message: string }
   const [copiedKey, setCopiedKey] = useState('');
 
@@ -99,21 +95,6 @@ export default function CitizenDashboard() {
     }
   }, [account]);
 
-  const fetchMarketplace = useCallback(async () => {
-    setLoadingMarket(true);
-    try {
-      const res = await fetch(`${API_URL}/api/properties/marketplace`);
-      if (res.ok) {
-        const data = await res.json();
-        setMarketplaceProps(data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch marketplace:', err);
-    } finally {
-      setLoadingMarket(false);
-    }
-  }, []);
-
   const fetchMyTransfers = useCallback(async () => {
     if (!account) return;
     setLoadingTransfers(true);
@@ -134,9 +115,8 @@ export default function CitizenDashboard() {
     if (account) {
       fetchMyProperties();
       fetchMyTransfers();
-      fetchMarketplace();
     }
-  }, [account, fetchMyProperties, fetchMyTransfers, fetchMarketplace]);
+  }, [account, fetchMyProperties, fetchMyTransfers]);
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -208,7 +188,6 @@ export default function CitizenDashboard() {
       await tx.wait();
       setActionStatus({ type: 'success', message: 'Property delisted successfully from marketplace.' });
       fetchMyProperties();
-      fetchMarketplace();
       setTimeout(() => setActionStatus(null), 3000);
     } catch (err) {
       console.error(err);
@@ -226,7 +205,6 @@ export default function CitizenDashboard() {
       setActionStatus({ type: 'success', message: 'Title conveyance executed successfully! Property is now registered under your ownership.' });
       fetchMyProperties();
       fetchMyTransfers();
-      fetchMarketplace();
       setTimeout(() => setActionStatus(null), 4000);
     } catch (err) {
       console.error(err);
@@ -277,7 +255,6 @@ export default function CitizenDashboard() {
             onClick={() => {
               fetchMyProperties();
               fetchMyTransfers();
-              fetchMarketplace();
             }}
             disabled={loadingProps || loadingTransfers}
             className="group px-4 py-2.5 text-xs font-bold uppercase tracking-wider bg-white border border-gray-300 hover:border-[#0f2b5a] text-gray-700 hover:text-[#0f2b5a] rounded-lg transition flex items-center gap-2 cursor-pointer shadow-xs shrink-0 disabled:opacity-50"
@@ -413,7 +390,6 @@ export default function CitizenDashboard() {
           1. My Land Titles (Default)
           2. Ownership Transfers
           3. Register Property
-          4. Marketplace Listings
       ========================================================================== */}
       <Tab.Group selectedIndex={selectedTabIndex} onChange={setSelectedTabIndex}>
         <Tab.List className="flex space-x-6 border-b border-gray-200 bg-transparent p-0 max-w-full overflow-x-auto">
@@ -452,20 +428,6 @@ export default function CitizenDashboard() {
               : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent font-semibold'
           )}>
             + Register Property
-          </Tab>
-
-          <Tab className={({ selected }) => classNames(
-            'pb-3 text-xs uppercase tracking-wider transition-all cursor-pointer focus:outline-none flex items-center shrink-0',
-            selected 
-              ? 'border-b-2 border-[#0f2b5a] text-[#0f2b5a] font-bold' 
-              : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent font-semibold'
-          )}>
-            Marketplace
-            {marketplaceProps.length > 0 && (
-              <span className="ml-2 bg-blue-50 text-[#0f2b5a] border border-blue-200 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold">
-                {marketplaceProps.length}
-              </span>
-            )}
           </Tab>
         </Tab.List>
 
@@ -990,106 +952,6 @@ export default function CitizenDashboard() {
               </form>
             </div>
           </Tab.Panel>
-
-          {/* ===================================================================
-              Tab 4: Marketplace Listings
-          ==================================================================== */}
-          <Tab.Panel className="bg-white border border-gray-200 rounded-xl p-6 shadow-xs focus:outline-none">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="text-lg font-bold text-[#0f2b5a]">Live Verified Listings</h2>
-                <p className="text-xs text-gray-500 mt-0.5">Purchases are secured with conditional smart contract escrow deposits.</p>
-              </div>
-              <button
-                onClick={fetchMarketplace}
-                disabled={loadingMarket}
-                className="group text-xs text-gray-700 hover:text-[#0f2b5a] font-semibold uppercase tracking-wider px-3.5 py-1.5 border border-gray-300 hover:border-[#0f2b5a] rounded-lg bg-white hover:bg-gray-50 transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50 shadow-xs"
-              >
-                <svg className={`w-3.5 h-3.5 text-gray-500 group-hover:text-[#0f2b5a] ${loadingMarket ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                <span>Refresh</span>
-              </button>
-            </div>
-
-            {loadingMarket ? (
-              <div className="text-gray-500 text-sm py-16 text-center flex flex-col items-center justify-center gap-3">
-                <svg className="animate-spin h-7 w-7 text-[#0f2b5a]" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                </svg>
-                <span>Loading verified marketplace listings...</span>
-              </div>
-            ) : marketplaceProps.length === 0 ? (
-              <div className="border border-dashed border-gray-300 rounded-xl bg-gray-50 p-10 text-center max-w-lg mx-auto">
-                <h3 className="text-base font-semibold text-gray-900">No Properties Currently Listed</h3>
-                <p className="text-xs text-gray-600 mt-1 max-w-sm mx-auto">
-                  There are no verified parcels currently posted for sale. You can list verified titles you own from the My Land Titles tab.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {marketplaceProps.map((prop) => {
-                  const isOwner = prop.currentOwner?.toLowerCase() === account?.toLowerCase();
-                  const priceEth = prop.price ? ethers.formatEther(prop.price.toString()) : '0';
-
-                  return (
-                    <div key={prop.propertyId} className="bg-white border border-gray-200 hover:border-gray-300 rounded-xl p-5 shadow-xs flex flex-col justify-between transition">
-                      <div>
-                        <div className="flex justify-between items-start mb-3">
-                          <span className="font-bold text-gray-700 font-mono text-xs bg-gray-100 px-2.5 py-1 rounded-md border border-gray-200">
-                            PARCEL #{prop.propertyId}
-                          </span>
-                          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-green-50 text-[#138808] border border-green-200">
-                            ✓ Certified Title
-                          </span>
-                        </div>
-
-                        <div className="mb-4 p-3 rounded-lg bg-blue-50/60 border border-blue-100">
-                          <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Price</span>
-                          <div className="text-2xl font-bold text-[#0f2b5a] font-mono mt-0.5">
-                            {priceEth} <span className="text-gray-600 text-sm font-semibold">ETH</span>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2 text-xs text-gray-700 mb-4">
-                          <p><span className="text-gray-500">Area:</span> <span className="font-semibold text-gray-900 font-mono">{prop.area} sq.m</span></p>
-                          <div>
-                            <span className="text-gray-500">Cadastral Ref:</span> 
-                            <p className="font-mono truncate bg-gray-50 p-1.5 border border-gray-200 rounded mt-0.5 text-xs text-gray-700 select-all">{prop.locationHash}</p>
-                          </div>
-                          <div>
-                            <span className="text-gray-500">Seller:</span> 
-                            <p className="font-mono truncate bg-gray-50 p-1.5 border border-gray-200 rounded mt-0.5 text-xs text-gray-700 select-all">
-                              {isOwner ? "You (Connected Wallet)" : prop.currentOwner}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 pt-3 border-t border-gray-200">
-                        {isOwner ? (
-                          <button
-                            onClick={() => handleDelist(prop.propertyId)}
-                            className="w-full bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 py-2.5 rounded-lg font-semibold text-xs uppercase tracking-wider transition cursor-pointer"
-                          >
-                            Remove from Marketplace
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => setBuyingProperty(prop)}
-                            className="w-full bg-[#0f2b5a] hover:bg-blue-900 active:bg-blue-950 text-white py-2.5 rounded-lg font-semibold text-xs uppercase tracking-wider transition shadow-xs cursor-pointer"
-                          >
-                            Purchase via Escrow ({priceEth} ETH)
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </Tab.Panel>
         </Tab.Panels>
       </Tab.Group>
 
@@ -1114,17 +976,6 @@ export default function CitizenDashboard() {
         property={listingProperty}
         onListSuccess={() => {
           fetchMyProperties();
-          fetchMarketplace();
-        }}
-      />
-
-      <BuyPropertyModal
-        isOpen={!!buyingProperty}
-        onClose={() => setBuyingProperty(null)}
-        property={buyingProperty}
-        onBuySuccess={() => {
-          fetchMyTransfers();
-          fetchMarketplace();
         }}
       />
 

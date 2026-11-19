@@ -6,10 +6,16 @@ const multer = require('multer');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 5000;
+const host = '0.0.0.0';
 
-// Middleware
-app.use(cors());
+// Middleware & Configurable CORS
+const corsOrigin = process.env.CORS_ORIGIN;
+const corsOptions = corsOrigin
+  ? { origin: corsOrigin.includes(',') ? corsOrigin.split(',').map(s => s.trim()) : corsOrigin.trim() }
+  : {};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Request logging middleware
@@ -57,9 +63,21 @@ app.get('/api/health', async (req, res) => {
 });
 
 if (require.main === module) {
-  app.listen(port, () => {
-    console.log(`Backend server listening at http://localhost:${port}`);
+  app.listen(port, host, () => {
+    console.log(`Backend server listening at http://${host}:${port}`);
   });
+
+  if (process.env.RUN_INDEXER !== 'false') {
+    try {
+      const { runIndexer } = require('./indexer');
+      console.log('Initializing blockchain event indexer...');
+      runIndexer().catch((err) => {
+        console.error('Failed to run indexer in background:', err);
+      });
+    } catch (err) {
+      console.error('Failed to load indexer:', err);
+    }
+  }
 }
 
 module.exports = app;

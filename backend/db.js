@@ -1,10 +1,21 @@
 const Database = require('better-sqlite3');
+const fs = require('fs');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
-const dbPath = process.env.DB_PATH
-  ? (path.isAbsolute(process.env.DB_PATH) ? process.env.DB_PATH : path.join(__dirname, process.env.DB_PATH))
+const defaultDbPath = process.env.NODE_ENV === 'production'
+  ? '/app/data/database.sqlite'
   : path.join(__dirname, 'database.sqlite');
+
+const rawDbPath = process.env.DB_PATH || defaultDbPath;
+const dbPath = path.isAbsolute(rawDbPath) ? rawDbPath : path.join(__dirname, rawDbPath);
+
+// Ensure parent directory exists before instantiating database
+const dbDir = path.dirname(dbPath);
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+}
+
 const db = new Database(dbPath);
 
 function initializeDatabase() {

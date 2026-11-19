@@ -2,14 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { StateProvider } from './context/StateContext';
+import { SUPPORTED_CHAIN_ID } from './config';
 import StateSelector from './components/StateSelector';
 import ComingSoonModal from './components/ComingSoonModal';
 import PublicSearch from './pages/PublicSearch';
 import CitizenDashboard from './pages/CitizenDashboard';
 import AuthorityDashboard from './pages/AuthorityDashboard';
 import Marketplace from './pages/Marketplace';
-
-const HARDHAT_ACCOUNT_0 = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266';
 
 function NavLink({ to, children }) {
   const location = useLocation();
@@ -32,7 +31,7 @@ function NavLink({ to, children }) {
 function Navbar() {
   const { account, role, isConnecting, networkError, connectWallet, disconnect, switchAccount, switchToSupportedNetwork } = useAuth();
   const [copied, setCopied] = useState(false);
-  const isAuthority = role === 'AUTHORITY' || (account && account.toLowerCase() === HARDHAT_ACCOUNT_0);
+  const isAuthority = role === 'AUTHORITY';
 
   const copyAddress = () => {
     if (account) {
@@ -94,7 +93,7 @@ function Navbar() {
             <button
               onClick={switchToSupportedNetwork}
               className="px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-300 text-xs font-semibold text-amber-900 hover:bg-amber-100 transition flex items-center gap-1.5"
-              title="Connect to State Cadastral Ledger Cluster (Chain ID 31337)"
+              title={`Connect to Cadastral Ledger Cluster (Chain ID ${SUPPORTED_CHAIN_ID})`}
             >
               <span className="w-2 h-2 rounded-full bg-amber-500" />
               <span>State Cluster Disconnected • Connect Node</span>
@@ -241,7 +240,7 @@ function Layout({ children }) {
 
 function App() {
   const { role, account, handleAccountChange } = useAuth();
-  const isAuthority = role === 'AUTHORITY' || (account && account.toLowerCase() === HARDHAT_ACCOUNT_0);
+  const isAuthority = role === 'AUTHORITY';
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.ethereum && handleAccountChange) {

@@ -2,7 +2,11 @@ const { ethers } = require('ethers');
 const path = require('path');
 const db = require('./db');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
-const contractArtifact = require('../artifacts/contracts/LandRegistry.sol/LandRegistry.json');
+const fs = require('fs');
+const artifactLocal = path.join(__dirname, 'LandRegistry.json');
+const contractArtifact = fs.existsSync(artifactLocal)
+  ? require(artifactLocal)
+  : require('../artifacts/contracts/LandRegistry.sol/LandRegistry.json');
 
 const RPC_URL = process.env.RPC_URL || 'http://127.0.0.1:8545';
 // NOTE: Must be updated with actual deployed address on testnet/mainnet

@@ -24,8 +24,21 @@ const AUTHORIZED_AUTHORITIES = new Set([
   HARDHAT_ACCOUNT_0
 ]);
 
+// Resolve uploads directory with persistent volume support
+const defaultUploadsDir = process.env.NODE_ENV === 'production'
+  ? '/app/data/uploads'
+  : path.resolve(__dirname, '../uploads');
+
+const uploadsDir = process.env.UPLOADS_DIR
+  ? (path.isAbsolute(process.env.UPLOADS_DIR) ? process.env.UPLOADS_DIR : path.resolve(__dirname, '..', process.env.UPLOADS_DIR))
+  : defaultUploadsDir;
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 // Setup multer for local disk storage (existing route)
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ dest: uploadsDir });
 
 // Setup multer for ingestion route with in-memory storage (10MB limit, single file)
 const uploadIngest = multer({
@@ -95,7 +108,7 @@ router.post('/', upload.single('file'), (req, res) => {
 
     // 2. Content-addressable storage locally
     const newFilename = documentHash.replace('0x', '') + path.extname(req.file.originalname || '');
-    const newPath = path.join('uploads', newFilename);
+    const newPath = path.join(uploadsDir, newFilename);
 
     if (fs.existsSync(newPath)) {
       // Duplicate file content already exists; temp file will be removed in finally
@@ -231,7 +244,7 @@ router.post('/ingest', ingestConcurrencyGuard, (req, res, next) => {
     // 8. Store file locally using content-addressed anchor ONLY after all security & parsing checks pass
     const ext = path.extname(req.file.originalname || '') || '.pdf';
     const storedFilename = documentAnchor.replace('0x', '') + ext;
-    storedPath = path.join('uploads', storedFilename);
+    storedPath = path.join(uploadsDir, storedFilename);
 
     if (!fs.existsSync(storedPath)) {
       fs.writeFileSync(storedPath, fileBytes);
@@ -363,14 +376,28 @@ router.get('/:hash/download', (req, res) => {
     // 4. Resolve file path on disk
     let diskPath = null;
     if (docRow && docRow.file_reference) {
-      diskPath = path.join(__dirname, '..', docRow.file_reference.replace(/^\//, ''));
+      const filename = path.basename(docRow.file_reference);
+      const candidatePath = path.join(uploadsDir, filename);
+      if (fs.existsSync(candidatePath)) {
+        diskPath = candidatePath;
+      } else {
+        const legacyPath = path.join(__dirname, '..', docRow.file_reference.replace(/^\//, ''));
+        if (fs.existsSync(legacyPath)) {
+          diskPath = legacyPath;
+        }
+      }
     }
     if (!diskPath || !fs.existsSync(diskPath)) {
       const candidateExts = ['.pdf', ''];
       for (const ext of candidateExts) {
-        const p = path.join('uploads', hash.replace('0x', '') + ext);
+        const p = path.join(uploadsDir, hash.replace('0x', '') + ext);
         if (fs.existsSync(p)) {
           diskPath = p;
+          break;
+        }
+        const legacyP = path.join('uploads', hash.replace('0x', '') + ext);
+        if (fs.existsSync(legacyP)) {
+          diskPath = legacyP;
           break;
         }
       }

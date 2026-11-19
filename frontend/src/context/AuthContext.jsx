@@ -1,10 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { BrowserProvider, Contract } from 'ethers';
-import { CONTRACT_ADDRESS, SUPPORTED_CHAIN_ID } from '../config';
+import { CONTRACT_ADDRESS, SUPPORTED_CHAIN_ID, NETWORK_CONFIGS } from '../config';
 import LandRegistryArtifact from '../LandRegistry.json';
 import { resolveActiveAccount } from '../utils/accountResolver';
-
-const HARDHAT_ACCOUNT_0 = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266';
 
 const AuthContext = createContext();
 
@@ -36,21 +34,16 @@ export function AuthProvider({ children }) {
             return true;
         } catch (switchError) {
             if (switchError.code === 4902 || switchError?.data?.originalError?.code === 4902) {
+                const netConfig = NETWORK_CONFIGS[SUPPORTED_CHAIN_ID] || {
+                    chainId: hexChainId,
+                    chainName: `Chain ${SUPPORTED_CHAIN_ID}`,
+                    rpcUrls: [],
+                    nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                };
                 try {
                     await window.ethereum.request({
                         method: 'wallet_addEthereumChain',
-                        params: [
-                            {
-                                chainId: hexChainId,
-                                chainName: 'Hardhat Localhost',
-                                rpcUrls: ['http://127.0.0.1:8545'],
-                                nativeCurrency: {
-                                    name: 'ETH',
-                                    symbol: 'ETH',
-                                    decimals: 18,
-                                },
-                            },
-                        ],
+                        params: [netConfig],
                     });
                     return true;
                 } catch (addError) {
@@ -80,7 +73,7 @@ export function AuthProvider({ children }) {
                 const switched = await switchToSupportedNetwork();
                 if (!switched) {
                     setNetworkError(true);
-                    alert(`Wrong network detected. Please switch to chainId: ${SUPPORTED_CHAIN_ID} (Hardhat Localhost: http://127.0.0.1:8545) in MetaMask.`);
+                    alert(`Wrong network detected. Please switch to network chainId: ${SUPPORTED_CHAIN_ID} in MetaMask.`);
                     return;
                 }
                 web3Provider = new BrowserProvider(window.ethereum);
@@ -107,15 +100,19 @@ export function AuthProvider({ children }) {
                 web3Signer
             );
 
-            // Role detection
-            let isAdmin = Boolean(address && address.toLowerCase() === HARDHAT_ACCOUNT_0);
+            // Role detection via on-chain contract roles
+            let isAdmin = false;
             try {
                 const ADMIN_ROLE = await registryContract.ADMIN_ROLE();
-                if (!isAdmin) {
-                    isAdmin = await registryContract.hasRole(ADMIN_ROLE, address);
-                }
+                const hasAdmin = await registryContract.hasRole(ADMIN_ROLE, address);
+                let hasRegistrar = false;
+                try {
+                    const REGISTRAR_ROLE = await registryContract.REGISTRAR_ROLE();
+                    hasRegistrar = await registryContract.hasRole(REGISTRAR_ROLE, address);
+                } catch (_) {}
+                isAdmin = hasAdmin || hasRegistrar;
             } catch (roleErr) {
-                console.warn("ADMIN_ROLE check failed:", roleErr);
+                console.warn("Role check failed:", roleErr);
             }
 
             setProvider(web3Provider);
@@ -130,7 +127,7 @@ export function AuthProvider({ children }) {
             if (msg.includes("could not decode result data") || msg.includes("BAD_DATA") || error?.code === "BAD_DATA") {
                 alert(`Connected to chain ${SUPPORTED_CHAIN_ID}, but LandRegistry contract is not deployed at ${CONTRACT_ADDRESS}. Please run: npm run deploy:local`);
             } else if (msg.includes("fetch") || msg.includes("NetworkError") || msg.includes("connection") || msg.includes("network")) {
-                alert("Cannot connect to local blockchain. Please ensure the Hardhat node is running at http://127.0.0.1:8545.");
+                alert(`Cannot connect to blockchain network (chainId: ${SUPPORTED_CHAIN_ID}). Please verify your network connection.`);
             } else {
                 alert(`Failed to connect wallet: ${error?.reason || error?.message || "See console for details."}`);
             }
@@ -159,14 +156,18 @@ export function AuthProvider({ children }) {
                 );
 
                 // Role detection for the newly switched account
-                let isAdmin = Boolean(newAddress && newAddress.toLowerCase() === HARDHAT_ACCOUNT_0);
+                let isAdmin = false;
                 try {
                     const ADMIN_ROLE = await registryContract.ADMIN_ROLE();
-                    if (!isAdmin) {
-                        isAdmin = await registryContract.hasRole(ADMIN_ROLE, newAddress);
-                    }
+                    const hasAdmin = await registryContract.hasRole(ADMIN_ROLE, newAddress);
+                    let hasRegistrar = false;
+                    try {
+                        const REGISTRAR_ROLE = await registryContract.REGISTRAR_ROLE();
+                        hasRegistrar = await registryContract.hasRole(REGISTRAR_ROLE, newAddress);
+                    } catch (_) {}
+                    isAdmin = hasAdmin || hasRegistrar;
                 } catch (roleErr) {
-                    console.warn("ADMIN_ROLE check failed on account switch:", roleErr);
+                    console.warn("Role check failed on account switch:", roleErr);
                 }
 
                 setProvider(web3Provider);
@@ -177,9 +178,7 @@ export function AuthProvider({ children }) {
             } catch (error) {
                 console.error("Failed to update role/contract on account change:", error);
                 setAccount(newAddress);
-                if (newAddress && newAddress.toLowerCase() === HARDHAT_ACCOUNT_0) {
-                    setRole('AUTHORITY');
-                }
+                setRole('CITIZEN');
             }
         }
     }, [disconnect]);
